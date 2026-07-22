@@ -4,10 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
 
 export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const router = useRouter()
@@ -24,29 +20,33 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     setError(null)
     setLoading(true)
 
-    const { error } = isSignUp
-      ? await authClient.signUp.email({ email, password, name })
-      : await authClient.signIn.email({ email, password })
+    try {
+      const { error } = isSignUp
+        ? await authClient.signUp.email({ email, password, name })
+        : await authClient.signIn.email({ email, password })
 
-    setLoading(false)
+      if (error) {
+        setError(error.message ?? 'Something went wrong')
+        setLoading(false)
+        return
+      }
 
-    if (error) {
-      setError(error.message ?? 'Something went wrong')
-      return
+      router.push('/')
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message ?? 'Something went wrong')
+      setLoading(false)
     }
-
-    router.push('/')
-    router.refresh()
   }
 
   return (
-    <main className="min-h-svh bg-background flex items-center justify-center px-4">
-      <Card className="w-full max-w-sm p-6">
+    <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm p-6 bg-slate-900 rounded-lg shadow-lg border border-slate-700">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-semibold text-white">
             {isSignUp ? 'Create an account' : 'Welcome back'}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             {isSignUp
               ? 'Sign up to get started'
               : 'Sign in to your account to continue'}
@@ -56,30 +56,41 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {isSignUp && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
+              <label htmlFor="name" className="text-sm font-medium text-slate-200">
+                Name
+              </label>
+              <input
                 id="name"
+                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 autoComplete="name"
+                className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                placeholder="Your name"
               />
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
+            <label htmlFor="email" className="text-sm font-medium text-slate-200">
+              Email
+            </label>
+            <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder="your@email.com"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
+            <label htmlFor="password" className="text-sm font-medium text-slate-200">
+              Password
+            </label>
+            <input
               id="password"
               type="password"
               value={password}
@@ -87,34 +98,40 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
               required
               minLength={8}
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-destructive" role="alert">
+            <p className="text-sm text-red-400" role="alert">
               {error}
             </p>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 text-white font-medium rounded transition-colors"
+          >
             {loading
               ? 'Please wait...'
               : isSignUp
                 ? 'Create account'
                 : 'Sign in'}
-          </Button>
+          </button>
         </form>
 
-        <p className="text-sm text-muted-foreground text-center mt-6">
+        <p className="text-sm text-slate-400 text-center mt-6">
           {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
           <Link
             href={isSignUp ? '/sign-in' : '/sign-up'}
-            className="text-foreground font-medium underline-offset-4 hover:underline"
+            className="text-blue-400 hover:text-blue-300 font-medium"
           >
             {isSignUp ? 'Sign in' : 'Sign up'}
           </Link>
         </p>
-      </Card>
+      </div>
     </main>
   )
 }
