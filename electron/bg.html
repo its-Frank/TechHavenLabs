@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0e0f1a; }
+canvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const NODE_COUNT = 32;
+const nodes = Array.from({ length: NODE_COUNT }, () => ({
+  x: Math.random() * canvas.width,
+  y: canvas.height * 0.35 + Math.random() * canvas.height * 0.3,
+  vx: (Math.random() - 0.5) * 0.45,
+  vy: (Math.random() - 0.5) * 0.18,
+  r: 2 + Math.random() * 2,
+  envelope: Math.random() > 0.42,
+  teal: Math.random() > 0.5,
+}));
+
+const BOKEH_COUNT = 20;
+const bokeh = Array.from({ length: BOKEH_COUNT }, () => ({
+  x: Math.random() * canvas.width,
+  y: canvas.height * 0.15 + Math.random() * canvas.height * 0.7,
+  r: 20 + Math.random() * 50,
+  alpha: 0.04 + Math.random() * 0.09,
+  teal: Math.random() > 0.5,
+  vx: (Math.random() - 0.5) * 0.12,
+  vy: (Math.random() - 0.5) * 0.07,
+}));
+
+function drawEnvelope(x, y, size, color) {
+  const w = size, h = size * 0.7;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.65;
+  ctx.beginPath();
+  ctx.rect(x - w / 2, y - h / 2, w, h);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y - h / 2);
+  ctx.lineTo(x, y + h * 0.1);
+  ctx.lineTo(x + w / 2, y - h / 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+const CONNECT_DIST = 130;
+
+function tick() {
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0e0f1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Bokeh glows
+  bokeh.forEach(b => {
+    b.x += b.vx; b.y += b.vy;
+    if (b.x < -b.r) b.x = W + b.r;
+    if (b.x > W + b.r) b.x = -b.r;
+    if (b.y < -b.r) b.y = H + b.r;
+    if (b.y > H + b.r) b.y = -b.r;
+    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    const col = b.teal ? `rgba(67,217,140,${b.alpha})` : `rgba(167,139,250,${b.alpha})`;
+    grad.addColorStop(0, col);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  });
+
+  // Connecting lines
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONNECT_DIST) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(100,140,180,${0.28 * (1 - dist / CONNECT_DIST)})`;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Nodes
+  nodes.forEach(n => {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0) n.x = W; if (n.x > W) n.x = 0;
+    const bandTop = H * 0.28, bandBot = H * 0.72;
+    if (n.y < bandTop || n.y > bandBot) n.vy *= -1;
+    const col = n.teal ? '#43d98c' : '#a78bfa';
+    if (n.envelope) {
+      drawEnvelope(n.x, n.y, 11, col);
+    } else {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.6;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  requestAnimationFrame(tick);
+}
+
+tick();
+</script>
+</body>
+</html>

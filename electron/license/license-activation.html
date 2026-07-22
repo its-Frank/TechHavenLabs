@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #13141f;
+  color: #fff;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  overflow: hidden;
+}
+.titlebar {
+  height: 36px;
+  background: #0e0f1a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+.titlebar-title { font-size: 13px; color: rgba(255,255,255,0.6); }
+.titlebar-close {
+  -webkit-app-region: no-drag;
+  background: none; border: none; color: rgba(255,255,255,0.4);
+  cursor: pointer; font-size: 18px; line-height: 1;
+  transition: color 0.15s;
+}
+.titlebar-close:hover { color: #ff6b6b; }
+
+.body { flex: 1; padding: 28px 32px 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+
+.logo-row { display: flex; align-items: center; gap: 12px; }
+.logo-row img { width: 40px; height: 40px; border-radius: 10px; }
+.logo-row h1 { font-size: 18px; font-weight: 700; }
+.logo-row p { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+.status-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px;
+}
+.status-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.status-row:last-child { margin-bottom: 0; }
+.status-label { font-size: 12px; color: rgba(255,255,255,0.4); }
+.status-value { font-size: 12px; font-weight: 600; }
+.status-value.valid { color: #43d98c; }
+.status-value.trial { color: #f9a825; }
+.status-value.expired { color: #ff6b6b; }
+
+.device-id {
+  font-family: monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  word-break: break-all;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.device-id:hover { background: rgba(0,0,0,0.5); }
+.device-id-label { font-size: 11px; color: rgba(255,255,255,0.3); margin-bottom: 4px; }
+
+.drop-zone {
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: #43d98c;
+  background: rgba(67,217,140,0.06);
+}
+.drop-zone svg { opacity: 0.3; margin-bottom: 8px; }
+.drop-zone p { font-size: 13px; color: rgba(255,255,255,0.5); }
+.drop-zone span { font-size: 11px; color: rgba(255,255,255,0.25); }
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: linear-gradient(135deg, #5865f2, #7b8cff); color: #fff; }
+.btn-success { background: linear-gradient(135deg, #2d9e6b, #43b581); color: #fff; }
+.btn-ghost { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
+
+.msg { font-size: 12px; text-align: center; padding: 8px; border-radius: 8px; display: none; }
+.msg.success { background: rgba(67,217,140,0.12); color: #43d98c; display: block; }
+.msg.error { background: rgba(255,107,107,0.12); color: #ff6b6b; display: block; }
+
+.divider { display: flex; align-items: center; gap: 10px; }
+.divider hr { flex: 1; border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+.divider span { font-size: 11px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <span class="titlebar-title">License Activation</span>
+  <button class="titlebar-close" id="close-btn">✕</button>
+</div>
+
+<div class="body">
+  <div class="logo-row">
+    <img src="../../assets/icon-256.png" alt="logo">
+    <div>
+      <h1>Unified Comms</h1>
+      <p id="status-subtitle">Checking license...</p>
+    </div>
+  </div>
+
+  <div class="status-card" id="status-card">
+    <div class="status-row">
+      <span class="status-label">Status</span>
+      <span class="status-value" id="status-val">—</span>
+    </div>
+    <div class="status-row" id="expiry-row" style="display:none">
+      <span class="status-label">Expires</span>
+      <span class="status-value" id="expiry-val">—</span>
+    </div>
+    <div class="status-row" id="plan-row" style="display:none">
+      <span class="status-label">Plan</span>
+      <span class="status-value" id="plan-val">—</span>
+    </div>
+    <div class="status-row" id="email-row" style="display:none">
+      <span class="status-label">Email</span>
+      <span class="status-value" id="email-val">—</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="device-id-label">Your Device ID (share with seller to get a license)</div>
+    <div class="device-id" id="device-id" title="Click to copy">Loading...</div>
+  </div>
+
+  <div class="drop-zone" id="drop-zone">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p>Drop license file here</p>
+    <span>.key or .json</span>
+  </div>
+
+  <div id="msg" class="msg"></div>
+
+  <button class="btn btn-success" id="select-btn">Select License File</button>
+
+  <div class="divider"><hr><span>or</span><hr></div>
+
+  <button class="btn btn-ghost" id="deactivate-btn" style="display:none">Deactivate License</button>
+  <button class="btn btn-ghost" id="close-trial-btn">Continue with Trial</button>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+async function load() {
+  const info = await ipcRenderer.invoke('get-license-info');
+
+  document.getElementById('device-id').textContent = info.deviceId || 'Unknown';
+
+  const statusEl = document.getElementById('status-val');
+  const subtitle = document.getElementById('status-subtitle');
+
+  if (info.hasLicense && info.valid) {
+    statusEl.textContent = '✓ Active';
+    statusEl.className = 'status-value valid';
+    subtitle.textContent = 'License active';
+    if (info.expiresAt) {
+      document.getElementById('expiry-row').style.display = 'flex';
+      document.getElementById('expiry-val').textContent = new Date(info.expiresAt).toLocaleDateString();
+    }
+    if (info.plan) {
+      document.getElementById('plan-row').style.display = 'flex';
+      document.getElementById('plan-val').textContent = info.plan.charAt(0).toUpperCase() + info.plan.slice(1);
+    }
+    if (info.email) {
+      document.getElementById('email-row').style.display = 'flex';
+      document.getElementById('email-val').textContent = info.email;
+    }
+    document.getElementById('deactivate-btn').style.display = 'block';
+    document.getElementById('close-trial-btn').textContent = 'Close';
+  } else if (info.inTrial) {
+    statusEl.textContent = `Trial — ${info.trialDaysLeft} day${info.trialDaysLeft !== 1 ? 's' : ''} left`;
+    statusEl.className = 'status-value trial';
+    subtitle.textContent = `${info.trialDaysLeft} days remaining in trial`;
+  } else {
+    statusEl.textContent = '✕ No License';
+    statusEl.className = 'status-value expired';
+    subtitle.textContent = 'Trial expired — activate a license';
+    document.getElementById('close-trial-btn').style.display = 'none';
+  }
+}
+
+// Copy device ID
+document.getElementById('device-id').addEventListener('click', () => {
+  const text = document.getElementById('device-id').textContent;
+  require('electron').clipboard.writeText(text);
+  document.getElementById('device-id').textContent = 'Copied!';
+  setTimeout(load, 1200);
+});
+
+// Select file
+document.getElementById('select-btn').addEventListener('click', async () => {
+  const result = await ipcRenderer.invoke('select-license-file');
+  showResult(result);
+});
+
+// Deactivate
+document.getElementById('deactivate-btn').addEventListener('click', async () => {
+  await ipcRenderer.invoke('deactivate-license');
+  load();
+});
+
+// Close
+document.getElementById('close-btn').addEventListener('click', () => window.close());
+document.getElementById('close-trial-btn').addEventListener('click', () => window.close());
+
+// Drag and drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const result = await ipcRenderer.invoke('activate-license', file.path);
+  showResult(result);
+});
+
+function showResult(result) {
+  const msg = document.getElementById('msg');
+  msg.className = 'msg ' + (result.success ? 'success' : 'error');
+  msg.textContent = result.success
+    ? `✓ License activated! ${result.daysLeft ? result.daysLeft + ' days remaining.' : ''}`
+    : `✕ ${result.error || 'Activation failed'}`;
+  if (result.success) load();
+}
+
+load();
+</script>
+</body>
+</html>

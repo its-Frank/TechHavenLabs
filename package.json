@@ -1,0 +1,77 @@
+{
+  "name": "unified-comms-next",
+  "version": "2.0.0",
+  "description": "Unified communication hub — Next.js + Electron desktop app",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently -n NEXT,ELECTRON -c cyan,magenta \"npm run dev:next\" \"npm run dev:electron\"",
+    "dev:next": "node scripts/dev-next.js",
+    "dev:electron": "node scripts/wait-and-launch.js",
+    "build": "node scripts/build.js",
+    "start": "node scripts/start-electron.js",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux"
+  },
+  "dependencies": {
+    "cross-fetch": "4.1.0",
+    "electron-store": "^8.1.0",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "tailwind-motionkit": "^1.0.2",
+    "typescript": "^5.5.3",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.unifiedcomms.app",
+    "productName": "Unified Comms",
+    "directories": { "output": "dist-app" },
+    "files": [
+      "electron/**/*",
+      "assets/**/*",
+      ".next/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "next.config.js",
+      "public/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "electron/preload.js",
+      "electron/combined-preload.js"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Network"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
